@@ -4,6 +4,7 @@ using BlogApi.Dtos.Posts;
 using BlogApi.Exceptions;
 using BlogApi.Interfaces;
 using BlogApi.Models;
+using BlogApi.Models.Responses;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlogApi.Services;
@@ -16,11 +17,14 @@ public class PostService : IPostService
     {
         _context = context;
     }
-    public async Task<List<PostDto>> GetAllAsync(int? categoryId)
+    public async Task<PagedResult<PostDto>> GetAllAsync(
+     int? categoryId,
+     string? search,
+     int page,
+     int pageSize
+ )
     {
         var query = _context.Posts
-            .Include(x => x.User)
-            .Include(x => x.Categories)
             .AsQueryable();
 
         if (categoryId.HasValue)
@@ -32,8 +36,20 @@ public class PostService : IPostService
             );
         }
 
-        return await query
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(post =>
+                post.Title.Contains(search) ||
+                post.Content.Contains(search)
+            );
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var posts = await query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new PostDto
             {
                 Id = x.Id,
@@ -54,6 +70,20 @@ public class PostService : IPostService
                     .ToList()
             })
             .ToListAsync();
+
+        return new PagedResult<PostDto>
+        {
+            Items = posts,
+            Pagination = new PaginationMeta
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(
+                    totalCount / (double)pageSize
+                )
+            }
+        };
     }
     public async Task<PostDto> GetByIdAsync(int id)
     {

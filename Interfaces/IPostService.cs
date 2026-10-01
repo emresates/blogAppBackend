@@ -1,10 +1,16 @@
 using BlogApi.Dtos.Posts;
+using BlogApi.Models.Responses;
 
 namespace BlogApi.Interfaces;
 
 public interface IPostService
 {
-    Task<List<PostDto>> GetAllAsync(int? categoryId);
+    Task<PagedResult<PostDto>> GetAllAsync(
+        int? categoryId,
+        string? search,
+        int page,
+        int pageSize
+    );
 
     Task<PostDto> GetByIdAsync(int id);
 

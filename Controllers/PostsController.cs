@@ -20,19 +20,44 @@ public class PostsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-    [FromQuery] int? categoryId
-)
+       [FromQuery] int? categoryId,
+       [FromQuery] string? search,
+       [FromQuery] int page = 1,
+       [FromQuery] int pageSize = 10
+   )
     {
-        var posts = await _postService.GetAllAsync(categoryId);
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        if (pageSize < 1)
+        {
+            pageSize = 1;
+        }
+
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
+        var result = await _postService.GetAllAsync(
+            categoryId,
+            search,
+            page,
+            pageSize
+        );
 
         return Ok(
             ApiResponse<List<PostDto>>.Success(
-                posts,
+                result.Items,
                 200,
-                "Postlar getirildi."
+                "Postlar getirildi.",
+                result.Pagination
             )
         );
     }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
