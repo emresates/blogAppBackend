@@ -33,7 +33,8 @@ public class AuthService : IAuthService
         {
             throw new AppException(
                 "Bu email zaten kullanılıyor.",
-                400
+                400,
+                "emailAlreadyExists"
             );
         }
 
@@ -71,7 +72,8 @@ public class AuthService : IAuthService
         {
             throw new AppException(
                 "Email veya şifre hatalı.",
-                401
+                401,
+                "WrongUsernameOrPassword"
             );
         }
 
@@ -87,7 +89,8 @@ public class AuthService : IAuthService
         {
             throw new AppException(
                 "Email veya şifre hatalı.",
-                401
+                401,
+                "WrongUsernameOrPassword"
             );
         }
 

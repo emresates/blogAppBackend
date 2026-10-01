@@ -7,10 +7,38 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi;
 using BlogApi.Middlewares;
+using BlogApi.Models.Responses;
+using Microsoft.AspNetCore.Mvc;
+using BlogApi.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var firstError = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .SelectMany(x => x.Value!.Errors)
+            .FirstOrDefault();
+
+        var errCode = firstError?.ErrorMessage
+            ?? "validationFailed";
+
+        var message = ErrorMessages.GetMessage(errCode);
+
+        var response = ApiResponse<object>.Error(
+            400,
+            message,
+            errCode
+        );
+
+        return new BadRequestObjectResult(response);
+    };
+});
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

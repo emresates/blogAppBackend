@@ -40,7 +40,8 @@ public class ExceptionMiddleware
 
         var response = ApiResponse<object>.Error(
             ex.StatusCode,
-            ex.Message
+            ex.Message,
+            ex.ErrCode
         );
 
         var json = JsonSerializer.Serialize(response);
@@ -60,7 +61,8 @@ public class ExceptionMiddleware
 
         var response = ApiResponse<object>.Error(
             500,
-            "Beklenmeyen bir hata oluştu."
+            "Beklenmeyen bir hata oluştu.",
+            "internalServerError"
         );
 
         var json = JsonSerializer.Serialize(response);

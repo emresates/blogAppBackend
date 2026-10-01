@@ -38,7 +38,8 @@ public class CategoryService : ICategoryService
         {
             throw new AppException(
                 "Kategori bulunamadı.",
-                404
+                404,
+                "categoryNotFound"
             );
         }
 
@@ -61,7 +62,8 @@ public class CategoryService : ICategoryService
         {
             throw new AppException(
                 "Bu kategori zaten mevcut.",
-                400
+                400,
+                "categoryAlreadyExists"
             );
         }
 
@@ -94,7 +96,8 @@ public class CategoryService : ICategoryService
         {
             throw new AppException(
                 "Kategori bulunamadı.",
-                404
+                404,
+                "categoryNotFound"
             );
         }
 
@@ -119,7 +122,8 @@ public class CategoryService : ICategoryService
         {
             throw new AppException(
                 "Kategori bulunamadı.",
-                404
+                404,
+                "categoryNotFound"
             );
         }
 
@@ -130,7 +134,8 @@ public class CategoryService : ICategoryService
         {
             throw new AppException(
                 "Bu kategoriye bağlı postlar olduğu için silinemez.",
-                400
+                400,
+                "categoryHasPosts"
             );
         }
 

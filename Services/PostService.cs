@@ -95,7 +95,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Post bulunamadı.",
-                404
+                404,
+                "postNotFound"
             );
         }
 
@@ -132,7 +133,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Gönderilen kategorilerden biri veya birkaçı bulunamadı.",
-                404
+                404,
+                "categoryNotFound"
             );
         }
 
@@ -186,7 +188,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Post bulunamadı.",
-                404
+                404,
+                "postNotFound"
             );
         }
 
@@ -194,7 +197,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Bu postu güncelleme yetkiniz yok.",
-                403
+                403,
+                "notAuthorized"
             );
         }
 
@@ -206,7 +210,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Gönderilen kategorilerden biri veya birkaçı bulunamadı.",
-                404
+                404,
+                "categoryNotFound"
             );
         }
 
@@ -254,7 +259,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Post bulunamadı.",
-                404
+                404,
+                "postNotFound"
             );
         }
 
@@ -262,7 +268,8 @@ public class PostService : IPostService
         {
             throw new AppException(
                 "Bu postu silme yetkiniz yok.",
-                403
+                403,
+                "notAuthorized"
             );
         }
 
