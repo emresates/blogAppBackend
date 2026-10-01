@@ -1,4 +1,5 @@
 namespace BlogApi.Dtos.Posts;
+using BlogApi.Dtos.Categories;
 
 public class PostDto
 {
@@ -15,4 +16,6 @@ public class PostDto
     public int UserId { get; set; }
 
     public string AuthorName { get; set; } = string.Empty;
+
+    public List<CategoryDto> Categories { get; set; } = new();
 }
