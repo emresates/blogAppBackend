@@ -70,8 +70,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<IPostService, PostService>();
 
+builder.Services.AddScoped<TokenService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

@@ -117,6 +117,7 @@
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/blogapi.csproj.CoreCompileInputs.cache
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/blogapi.MvcApplicationPartsAssemblyInfo.cs
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/blogapi.MvcApplicationPartsAssemblyInfo.cache
+/Users/emre/Desktop/blogapi/obj/Debug/net10.0/blogapi.sourcelink.json
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/rjimswa.dswa.cache.json
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/rjsmrazor.dswa.cache.json
 /Users/emre/Desktop/blogapi/obj/Debug/net10.0/rjsmcshtml.dswa.cache.json
