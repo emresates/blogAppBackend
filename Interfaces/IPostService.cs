@@ -4,7 +4,7 @@ namespace BlogApi.Interfaces;
 
 public interface IPostService
 {
-    Task<List<PostDto>> GetAllAsync();
+    Task<List<PostDto>> GetAllAsync(int? categoryId);
 
     Task<PostDto> GetByIdAsync(int id);
 

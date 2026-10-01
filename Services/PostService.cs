@@ -16,34 +16,45 @@ public class PostService : IPostService
     {
         _context = context;
     }
-
-    public async Task<List<PostDto>> GetAllAsync()
+    public async Task<List<PostDto>> GetAllAsync(int? categoryId)
     {
-        return await _context.Posts
-        .Include(x => x.User)
-        .Include(x => x.Categories)
-        .OrderByDescending(x => x.CreatedAt)
-        .Select(x => new PostDto
-        {
-            Id = x.Id,
-            Title = x.Title,
-            Content = x.Content,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt,
-            UserId = x.UserId,
-            AuthorName = x.User.Name,
-            Categories = x.Categories
-                .Select(category => new CategoryDto
-                {
-                    Id = category.Id,
-                    Name = category.Name,
-                    CreatedAt = category.CreatedAt
-                })
-                .ToList()
-        })
-        .ToListAsync();
-    }
+        var query = _context.Posts
+            .Include(x => x.User)
+            .Include(x => x.Categories)
+            .AsQueryable();
 
+        if (categoryId.HasValue)
+        {
+            query = query.Where(post =>
+                post.Categories.Any(category =>
+                    category.Id == categoryId.Value
+                )
+            );
+        }
+
+        return await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new PostDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Content = x.Content,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt,
+                UserId = x.UserId,
+                AuthorName = x.User.Name,
+
+                Categories = x.Categories
+                    .Select(category => new CategoryDto
+                    {
+                        Id = category.Id,
+                        Name = category.Name,
+                        CreatedAt = category.CreatedAt
+                    })
+                    .ToList()
+            })
+            .ToListAsync();
+    }
     public async Task<PostDto> GetByIdAsync(int id)
     {
         var post = await _context.Posts

@@ -19,9 +19,11 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+    [FromQuery] int? categoryId
+)
     {
-        var posts = await _postService.GetAllAsync();
+        var posts = await _postService.GetAllAsync(categoryId);
 
         return Ok(
             ApiResponse<List<PostDto>>.Success(
@@ -31,7 +33,6 @@ public class PostsController : ControllerBase
             )
         );
     }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
