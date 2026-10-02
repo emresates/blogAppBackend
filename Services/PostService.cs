@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BlogApi.Constants;
 using BlogApi.Data;
 using BlogApi.Dtos.Categories;
@@ -55,6 +56,37 @@ public class PostService : IPostService
         return slug;
     }
 
+
+    private static void ValidateContent(
+        JsonElement content
+    )
+    {
+        if (
+            content.ValueKind ==
+                JsonValueKind.Undefined ||
+            content.ValueKind ==
+                JsonValueKind.Null
+        )
+        {
+            throw new AppException(
+                "Post içeriği zorunludur.",
+                400,
+                "contentIsRequired"
+            );
+        }
+
+        if (
+            content.ValueKind !=
+            JsonValueKind.Object
+        )
+        {
+            throw new AppException(
+                "Post içeriği geçersiz.",
+                400,
+                "contentInvalid"
+            );
+        }
+    }
     public async Task<PagedResult<PostDto>> GetAllAsync(
         int? categoryId,
         string? search,
@@ -87,11 +119,6 @@ public class PostService : IPostService
                 post =>
                     EF.Functions.ILike(
                         post.Title,
-                        searchText
-                    )
-                    ||
-                    EF.Functions.ILike(
-                        post.Content,
                         searchText
                     )
             );
@@ -227,6 +254,7 @@ public class PostService : IPostService
         int userId
     )
     {
+        ValidateContent(dto.Content);
         var slug =
             await GenerateUniqueSlugAsync(
                 dto.Title
@@ -279,7 +307,7 @@ public class PostService : IPostService
 
             Title = dto.Title.Trim(),
 
-            Content = dto.Content.Trim(),
+            Content = dto.Content.Clone(),
 
             UserId = userId,
 
@@ -311,6 +339,7 @@ public class PostService : IPostService
         string role
     )
     {
+        ValidateContent(dto.Content);
         var post = await _context.Posts
             .Include(x => x.User)
             .Include(x => x.Categories)
@@ -383,7 +412,7 @@ public class PostService : IPostService
         post.Title = dto.Title.Trim();
 
         post.Content =
-            dto.Content.Trim();
+            dto.Content.Clone();
 
         post.UpdatedAt =
             DateTime.UtcNow;

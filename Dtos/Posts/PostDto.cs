@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BlogApi.Dtos.Categories;
 
 namespace BlogApi.Dtos.Posts;
@@ -10,11 +11,13 @@ public class PostDto
 
     public string Slug { get; set; } = "";
 
-    public string Content { get; set; } = "";
+    public JsonElement Content { get; set; }
 
     public int ViewCount { get; set; }
 
     public int LikeCount { get; set; }
+
+    public int CommentCount { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -25,6 +28,4 @@ public class PostDto
     public string AuthorName { get; set; } = "";
 
     public List<CategoryDto> Categories { get; set; } = new();
-
-    public int CommentCount { get; set; }
 }

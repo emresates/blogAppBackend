@@ -1,17 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+
 namespace BlogApi.Dtos.Posts;
 
 public class CreatePostDto
 {
-    [Required(ErrorMessage = "Başlık zorunludur.")]
-    [MinLength(3, ErrorMessage = "Başlık en az 3 karakter olmalıdır.")]
-    [MaxLength(150, ErrorMessage = "Başlık en fazla 150 karakter olabilir.")]
-    public string Title { get; set; } = string.Empty;
+    [Required(ErrorMessage = "titleIsRequired")]
+    [MinLength(3, ErrorMessage = "titleMinLength")]
+    [MaxLength(150, ErrorMessage = "titleMaxLength")]
+    public string Title { get; set; } = "";
 
-    [Required(ErrorMessage = "İçerik zorunludur.")]
-    [MinLength(10, ErrorMessage = "İçerik en az 10 karakter olmalıdır.")]
-    public string Content { get; set; } = string.Empty;
+    public JsonElement Content { get; set; }
 
-    [MinLength(1, ErrorMessage = "En az bir kategori seçmelisiniz.")]
+    [MinLength(1, ErrorMessage = "categoryIsRequired")]
     public List<int> CategoryIds { get; set; } = new();
 }

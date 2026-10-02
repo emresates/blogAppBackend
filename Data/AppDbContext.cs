@@ -67,5 +67,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Post>()
             .HasIndex(x => x.Slug)
             .IsUnique();
+
+        modelBuilder.Entity<Post>()
+            .Property(x => x.Content)
+            .HasColumnType("jsonb");
     }
 }

@@ -1,12 +1,14 @@
 namespace BlogApi.Models;
 
+using System.Text.Json;
+
 public class Post
 {
     public int Id { get; set; }
 
     public string Title { get; set; } = "";
 
-    public string Content { get; set; } = "";
+    public JsonElement Content { get; set; }
 
     public int ViewCount { get; set; } = 0;
 
