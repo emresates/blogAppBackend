@@ -11,13 +11,30 @@ namespace blogapi.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<JsonElement>(
-                name: "Content",
-                table: "Posts",
-                type: "jsonb",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text");
+            migrationBuilder.Sql("""
+    ALTER TABLE "Posts"
+    ALTER COLUMN "Content" TYPE jsonb
+    USING jsonb_build_object(
+        'type', 'doc',
+        'content',
+        jsonb_build_array(
+            jsonb_build_object(
+                'type', 'paragraph',
+                'content',
+                CASE
+                    WHEN "Content" IS NULL OR btrim("Content") = ''
+                    THEN '[]'::jsonb
+                    ELSE jsonb_build_array(
+                        jsonb_build_object(
+                            'type', 'text',
+                            'text', "Content"
+                        )
+                    )
+                END
+            )
+        )
+    );
+    """);
         }
 
         /// <inheritdoc />
