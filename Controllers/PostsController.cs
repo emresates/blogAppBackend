@@ -81,6 +81,24 @@ public class PostsController : ControllerBase
         );
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<IActionResult> GetBySlug(
+    string slug
+)
+    {
+        var result =
+            await _postService
+                .GetBySlugAsync(slug);
+
+        return Ok(
+            ApiResponse<PostDto>.Success(
+                result,
+                200,
+                "Post getirildi."
+            )
+        );
+    }
+
     [Authorize(
         Roles = "Author,Admin,SuperAdmin"
     )]

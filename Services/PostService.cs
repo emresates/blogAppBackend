@@ -3,6 +3,7 @@ using BlogApi.Data;
 using BlogApi.Dtos.Categories;
 using BlogApi.Dtos.Posts;
 using BlogApi.Exceptions;
+using BlogApi.Helpers;
 using BlogApi.Interfaces;
 using BlogApi.Models;
 using BlogApi.Models.Responses;
@@ -17,6 +18,41 @@ public class PostService : IPostService
     public PostService(AppDbContext context)
     {
         _context = context;
+    }
+
+    private async Task<string> GenerateUniqueSlugAsync(
+    string title,
+    int? excludePostId = null
+)
+    {
+        var baseSlug = SlugHelper.Generate(title);
+
+        if (string.IsNullOrWhiteSpace(baseSlug))
+        {
+            baseSlug = "post";
+        }
+
+        var slug = baseSlug;
+
+        var counter = 2;
+
+        while (
+            await _context.Posts.AnyAsync(
+                x =>
+                    x.Slug == slug &&
+                    (
+                        !excludePostId.HasValue ||
+                        x.Id != excludePostId.Value
+                    )
+            )
+        )
+        {
+            slug = $"{baseSlug}-{counter}";
+
+            counter++;
+        }
+
+        return slug;
     }
 
     public async Task<PagedResult<PostDto>> GetAllAsync(
@@ -76,6 +112,8 @@ public class PostService : IPostService
                 Id = post.Id,
 
                 Title = post.Title,
+
+                Slug = post.Slug,
 
                 Content = post.Content,
 
@@ -155,11 +193,44 @@ public class PostService : IPostService
         return MapToDto(post);
     }
 
+    public async Task<PostDto> GetBySlugAsync(
+        string slug
+    )
+    {
+        var post = await _context.Posts
+            .Include(x => x.User)
+            .Include(x => x.Categories)
+            .Include(x => x.Likes)
+            .Include(x => x.Comments)
+            .FirstOrDefaultAsync(
+                x => x.Slug == slug
+            );
+
+        if (post == null)
+        {
+            throw new AppException(
+                "Post bulunamadı.",
+                404,
+                "postNotFound"
+            );
+        }
+
+        post.ViewCount++;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDto(post);
+    }
+
     public async Task<PostDto> CreateAsync(
         CreatePostDto dto,
         int userId
     )
     {
+        var slug =
+            await GenerateUniqueSlugAsync(
+                dto.Title
+            );
         var userExists =
             await _context.Users
                 .AnyAsync(
@@ -204,6 +275,8 @@ public class PostService : IPostService
 
         var post = new Post
         {
+            Slug = slug,
+
             Title = dto.Title.Trim(),
 
             Content = dto.Content.Trim(),
@@ -246,6 +319,7 @@ public class PostService : IPostService
             .FirstOrDefaultAsync(
                 x => x.Id == id
             );
+
 
         if (post == null)
         {
@@ -299,6 +373,13 @@ public class PostService : IPostService
             );
         }
 
+        var slug =
+            await GenerateUniqueSlugAsync(
+                dto.Title,
+                post.Id
+        );
+
+
         post.Title = dto.Title.Trim();
 
         post.Content =
@@ -306,6 +387,8 @@ public class PostService : IPostService
 
         post.UpdatedAt =
             DateTime.UtcNow;
+
+        post.Slug = slug;
 
         post.Categories.Clear();
 
@@ -446,6 +529,8 @@ public class PostService : IPostService
 
             Title = post.Title,
 
+            Slug = post.Slug,
+
             Content = post.Content,
 
             ViewCount = post.ViewCount,
@@ -455,6 +540,8 @@ public class PostService : IPostService
             CreatedAt = post.CreatedAt,
 
             UpdatedAt = post.UpdatedAt,
+
+            CommentCount = post.Comments.Count,
 
             UserId = post.UserId,
 

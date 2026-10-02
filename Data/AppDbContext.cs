@@ -63,5 +63,9 @@ public class AppDbContext : DbContext
             .WithMany(x => x.Comments)
             .HasForeignKey(x => x.PostId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Post>()
+            .HasIndex(x => x.Slug)
+            .IsUnique();
     }
 }

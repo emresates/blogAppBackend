@@ -14,6 +14,10 @@ public interface IPostService
 
     Task<PostDto> GetByIdAsync(int id);
 
+    Task<PostDto> GetBySlugAsync(
+        string slug
+    );
+
     Task<PostDto> CreateAsync(
         CreatePostDto dto,
         int userId

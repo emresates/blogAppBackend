@@ -23,4 +23,6 @@ public class Post
     public List<PostLike> Likes { get; set; } = new();
 
     public List<Comment> Comments { get; set; } = new();
+
+    public string Slug { get; set; } = "";
 }
