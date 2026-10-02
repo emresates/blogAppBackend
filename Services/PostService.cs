@@ -64,6 +64,7 @@ public class PostService : IPostService
         var totalCount =
             await query.CountAsync();
 
+
         var posts = await query
             .OrderByDescending(
                 post => post.CreatedAt
@@ -98,7 +99,10 @@ public class PostService : IPostService
                             Name = category.Name
                         }
                     )
-                    .ToList()
+                    .ToList(),
+
+                CommentCount = post.Comments.Count,
+
             })
             .ToListAsync();
 
@@ -130,6 +134,7 @@ public class PostService : IPostService
             .Include(x => x.User)
             .Include(x => x.Categories)
             .Include(x => x.Likes)
+            .Include(x => x.Comments)
             .FirstOrDefaultAsync(
                 x => x.Id == id
             );
@@ -218,6 +223,7 @@ public class PostService : IPostService
             .Include(x => x.User)
             .Include(x => x.Categories)
             .Include(x => x.Likes)
+            .Include(x => x.Comments)
             .FirstAsync(
                 x => x.Id == post.Id
             );
@@ -236,6 +242,7 @@ public class PostService : IPostService
             .Include(x => x.User)
             .Include(x => x.Categories)
             .Include(x => x.Likes)
+            .Include(x => x.Comments)
             .FirstOrDefaultAsync(
                 x => x.Id == id
             );

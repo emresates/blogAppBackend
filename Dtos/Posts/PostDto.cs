@@ -23,4 +23,6 @@ public class PostDto
     public string AuthorName { get; set; } = "";
 
     public List<CategoryDto> Categories { get; set; } = new();
+
+    public int CommentCount { get; set; }
 }

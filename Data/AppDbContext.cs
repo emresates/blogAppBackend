@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
 
     public DbSet<PostLike> PostLikes { get; set; }
 
+    public DbSet<Comment> Comments { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -49,5 +51,17 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Post)
             .WithMany(x => x.Likes)
             .HasForeignKey(x => x.PostId);
+
+        modelBuilder.Entity<Comment>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.Comments)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Comment>()
+            .HasOne(x => x.Post)
+            .WithMany(x => x.Comments)
+            .HasForeignKey(x => x.PostId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

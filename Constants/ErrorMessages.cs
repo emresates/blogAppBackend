@@ -26,7 +26,16 @@ public static class ErrorMessages
         ["contentIsRequired"] = "İçerik zorunludur.",
         ["contentMinLength"] = "İçerik en az 10 karakter olmalıdır.",
 
-        ["categoryMinLength"] = "En az bir kategori seçmelisiniz."
+        ["categoryMinLength"] = "En az bir kategori seçmelisiniz.",
+
+        ["categoryNotFound"] = "Kategori bulunamadı.",
+        ["postNotFound"] = "Post bulunamadı.",
+        ["userNotFound"] = "Kullanıcı bulunamadı.",
+        ["commentNotFound"] = "Yorum bulunamadı.",
+
+        ["commentIsRequired"] = "Yorum zorunludur.",
+        ["commentMinLength"] = "Yorum en az 1 karakter olmalıdır.",
+        ["commentMaxLength"] = "Yorum en fazla 500 karakter olabilir."
     };
 
     public static string GetMessage(string errCode)

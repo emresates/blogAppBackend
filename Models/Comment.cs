@@ -1,14 +1,10 @@
 namespace BlogApi.Models;
 
-public class Post
+public class Comment
 {
     public int Id { get; set; }
 
-    public string Title { get; set; } = "";
-
     public string Content { get; set; } = "";
-
-    public int ViewCount { get; set; } = 0;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -18,9 +14,7 @@ public class Post
 
     public User User { get; set; } = null!;
 
-    public List<Category> Categories { get; set; } = new();
+    public int PostId { get; set; }
 
-    public List<PostLike> Likes { get; set; } = new();
-
-    public List<Comment> Comments { get; set; } = new();
+    public Post Post { get; set; } = null!;
 }

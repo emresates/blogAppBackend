@@ -19,4 +19,6 @@ public class User
     public List<Post> Posts { get; set; } = new();
 
     public List<PostLike> PostLikes { get; set; } = new();
+
+    public List<Comment> Comments { get; set; } = new();
 }
