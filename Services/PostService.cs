@@ -1,3 +1,4 @@
+using BlogApi.Constants;
 using BlogApi.Data;
 using BlogApi.Dtos.Categories;
 using BlogApi.Dtos.Posts;
@@ -17,80 +18,122 @@ public class PostService : IPostService
     {
         _context = context;
     }
+
     public async Task<PagedResult<PostDto>> GetAllAsync(
-     int? categoryId,
-     string? search,
-     int page,
-     int pageSize
- )
+        int? categoryId,
+        string? search,
+        int page,
+        int pageSize
+    )
     {
         var query = _context.Posts
+            .AsNoTracking()
             .AsQueryable();
 
         if (categoryId.HasValue)
         {
-            query = query.Where(post =>
-                post.Categories.Any(category =>
-                    category.Id == categoryId.Value
-                )
+            query = query.Where(
+                post =>
+                    post.Categories.Any(
+                        category =>
+                            category.Id ==
+                            categoryId.Value
+                    )
             );
         }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(post =>
-                post.Title.Contains(search) ||
-                post.Content.Contains(search)
+            var searchText =
+                $"%{search.Trim()}%";
+
+            query = query.Where(
+                post =>
+                    EF.Functions.ILike(
+                        post.Title,
+                        searchText
+                    )
+                    ||
+                    EF.Functions.ILike(
+                        post.Content,
+                        searchText
+                    )
             );
         }
 
-        var totalCount = await query.CountAsync();
+        var totalCount =
+            await query.CountAsync();
 
         var posts = await query
-            .OrderByDescending(x => x.CreatedAt)
+            .OrderByDescending(
+                post => post.CreatedAt
+            )
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new PostDto
+            .Select(post => new PostDto
             {
-                Id = x.Id,
-                Title = x.Title,
-                Content = x.Content,
-                CreatedAt = x.CreatedAt,
-                UpdatedAt = x.UpdatedAt,
-                UserId = x.UserId,
-                AuthorName = x.User.Name,
+                Id = post.Id,
 
-                Categories = x.Categories
-                    .Select(category => new CategoryDto
-                    {
-                        Id = category.Id,
-                        Name = category.Name,
-                        CreatedAt = category.CreatedAt
-                    })
+                Title = post.Title,
+
+                Content = post.Content,
+
+                ViewCount = post.ViewCount,
+
+                LikeCount = post.Likes.Count,
+
+                CreatedAt = post.CreatedAt,
+
+                UpdatedAt = post.UpdatedAt,
+
+                UserId = post.UserId,
+
+                AuthorName = post.User.Name,
+
+                Categories = post.Categories
+                    .Select(category =>
+                        new CategoryDto
+                        {
+                            Id = category.Id,
+                            Name = category.Name
+                        }
+                    )
                     .ToList()
             })
             .ToListAsync();
 
+        var totalPages =
+            (int)Math.Ceiling(
+                totalCount /
+                (double)pageSize
+            );
+
         return new PagedResult<PostDto>
         {
             Items = posts,
+
             Pagination = new PaginationMeta
             {
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling(
-                    totalCount / (double)pageSize
-                )
+                TotalPages = totalPages
             }
         };
     }
-    public async Task<PostDto> GetByIdAsync(int id)
+
+    public async Task<PostDto> GetByIdAsync(
+        int id
+    )
     {
         var post = await _context.Posts
             .Include(x => x.User)
             .Include(x => x.Categories)
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .Include(x => x.Likes)
+            .FirstOrDefaultAsync(
+                x => x.Id == id
+            );
+
         if (post == null)
         {
             throw new AppException(
@@ -100,39 +143,55 @@ public class PostService : IPostService
             );
         }
 
-        return new PostDto
-        {
-            Id = post.Id,
-            Title = post.Title,
-            Content = post.Content,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt,
-            UserId = post.UserId,
-            AuthorName = post.User.Name,
-            Categories = post.Categories
-        .Select(x => new CategoryDto
-        {
-            Id = x.Id,
-            Name = x.Name,
-            CreatedAt = x.CreatedAt
-        })
-        .ToList()
-        };
+        post.ViewCount++;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDto(post);
     }
 
     public async Task<PostDto> CreateAsync(
-    CreatePostDto dto,
-    int userId
-)
+        CreatePostDto dto,
+        int userId
+    )
     {
-        var categories = await _context.Categories
-            .Where(x => dto.CategoryIds.Contains(x.Id))
-            .ToListAsync();
+        var userExists =
+            await _context.Users
+                .AnyAsync(
+                    x => x.Id == userId
+                );
 
-        if (categories.Count != dto.CategoryIds.Distinct().Count())
+        if (!userExists)
         {
             throw new AppException(
-                "Gönderilen kategorilerden biri veya birkaçı bulunamadı.",
+                "Kullanıcı bulunamadı.",
+                404,
+                "userNotFound"
+            );
+        }
+
+        var categoryIds =
+            dto.CategoryIds
+                .Distinct()
+                .ToList();
+
+        var categories =
+            await _context.Categories
+                .Where(
+                    x =>
+                        categoryIds.Contains(
+                            x.Id
+                        )
+                )
+                .ToListAsync();
+
+        if (
+            categories.Count !=
+            categoryIds.Count
+        )
+        {
+            throw new AppException(
+                "Kategori bulunamadı.",
                 404,
                 "categoryNotFound"
             );
@@ -140,49 +199,46 @@ public class PostService : IPostService
 
         var post = new Post
         {
-            Title = dto.Title,
-            Content = dto.Content,
+            Title = dto.Title.Trim(),
+
+            Content = dto.Content.Trim(),
+
             UserId = userId,
-            CreatedAt = DateTime.UtcNow,
-            Categories = categories
+
+            Categories = categories,
+
+            ViewCount = 0
         };
 
         _context.Posts.Add(post);
 
         await _context.SaveChangesAsync();
 
-        var user = await _context.Users.FindAsync(userId);
+        post = await _context.Posts
+            .Include(x => x.User)
+            .Include(x => x.Categories)
+            .Include(x => x.Likes)
+            .FirstAsync(
+                x => x.Id == post.Id
+            );
 
-        return new PostDto
-        {
-            Id = post.Id,
-            Title = post.Title,
-            Content = post.Content,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt,
-            UserId = post.UserId,
-            AuthorName = user?.Name ?? string.Empty,
-            Categories = categories
-                .Select(x => new CategoryDto
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    CreatedAt = x.CreatedAt
-                })
-                .ToList()
-        };
+        return MapToDto(post);
     }
 
     public async Task<PostDto> UpdateAsync(
-      int id,
-      UpdatePostDto dto,
-      int userId
-  )
+        int id,
+        UpdatePostDto dto,
+        int userId,
+        string role
+    )
     {
         var post = await _context.Posts
             .Include(x => x.User)
             .Include(x => x.Categories)
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .Include(x => x.Likes)
+            .FirstOrDefaultAsync(
+                x => x.Id == id
+            );
 
         if (post == null)
         {
@@ -193,31 +249,56 @@ public class PostService : IPostService
             );
         }
 
-        if (post.UserId != userId)
+        var isAdmin =
+            role == Roles.Admin ||
+            role == Roles.SuperAdmin;
+
+        if (
+            !isAdmin &&
+            post.UserId != userId
+        )
         {
             throw new AppException(
                 "Bu postu güncelleme yetkiniz yok.",
                 403,
-                "notAuthorized"
+                "postUpdateForbidden"
             );
         }
 
-        var categories = await _context.Categories
-            .Where(x => dto.CategoryIds.Contains(x.Id))
-            .ToListAsync();
+        var categoryIds =
+            dto.CategoryIds
+                .Distinct()
+                .ToList();
 
-        if (categories.Count != dto.CategoryIds.Distinct().Count())
+        var categories =
+            await _context.Categories
+                .Where(
+                    x =>
+                        categoryIds.Contains(
+                            x.Id
+                        )
+                )
+                .ToListAsync();
+
+        if (
+            categories.Count !=
+            categoryIds.Count
+        )
         {
             throw new AppException(
-                "Gönderilen kategorilerden biri veya birkaçı bulunamadı.",
+                "Kategori bulunamadı.",
                 404,
                 "categoryNotFound"
             );
         }
 
-        post.Title = dto.Title;
-        post.Content = dto.Content;
-        post.UpdatedAt = DateTime.UtcNow;
+        post.Title = dto.Title.Trim();
+
+        post.Content =
+            dto.Content.Trim();
+
+        post.UpdatedAt =
+            DateTime.UtcNow;
 
         post.Categories.Clear();
 
@@ -228,32 +309,20 @@ public class PostService : IPostService
 
         await _context.SaveChangesAsync();
 
-        return new PostDto
-        {
-            Id = post.Id,
-            Title = post.Title,
-            Content = post.Content,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt,
-            UserId = post.UserId,
-            AuthorName = post.User.Name,
-            Categories = post.Categories
-                .Select(x => new CategoryDto
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    CreatedAt = x.CreatedAt
-                })
-                .ToList()
-        };
+        return MapToDto(post);
     }
+
     public async Task DeleteAsync(
         int id,
-        int userId
+        int userId,
+        string role
     )
     {
-        var post = await _context.Posts
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var post =
+            await _context.Posts
+                .FirstOrDefaultAsync(
+                    x => x.Id == id
+                );
 
         if (post == null)
         {
@@ -264,17 +333,136 @@ public class PostService : IPostService
             );
         }
 
-        if (post.UserId != userId)
+        var isAdmin =
+            role == Roles.Admin ||
+            role == Roles.SuperAdmin;
+
+        if (
+            !isAdmin &&
+            post.UserId != userId
+        )
         {
             throw new AppException(
                 "Bu postu silme yetkiniz yok.",
                 403,
-                "notAuthorized"
+                "postDeleteForbidden"
             );
         }
 
         _context.Posts.Remove(post);
 
         await _context.SaveChangesAsync();
+    }
+
+    public async Task LikeAsync(
+        int postId,
+        int userId
+    )
+    {
+        var postExists =
+            await _context.Posts
+                .AnyAsync(
+                    x => x.Id == postId
+                );
+
+        if (!postExists)
+        {
+            throw new AppException(
+                "Post bulunamadı.",
+                404,
+                "postNotFound"
+            );
+        }
+
+        var alreadyLiked =
+            await _context.PostLikes
+                .AnyAsync(
+                    x =>
+                        x.PostId == postId &&
+                        x.UserId == userId
+                );
+
+        if (alreadyLiked)
+        {
+            throw new AppException(
+                "Bu post zaten beğenilmiş.",
+                400,
+                "postAlreadyLiked"
+            );
+        }
+
+        var like = new PostLike
+        {
+            PostId = postId,
+            UserId = userId
+        };
+
+        _context.PostLikes.Add(like);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UnlikeAsync(
+        int postId,
+        int userId
+    )
+    {
+        var like =
+            await _context.PostLikes
+                .FirstOrDefaultAsync(
+                    x =>
+                        x.PostId == postId &&
+                        x.UserId == userId
+                );
+
+        if (like == null)
+        {
+            throw new AppException(
+                "Bu post beğenilmemiş.",
+                400,
+                "postNotLiked"
+            );
+        }
+
+        _context.PostLikes.Remove(like);
+
+        await _context.SaveChangesAsync();
+    }
+
+    private static PostDto MapToDto(
+        Post post
+    )
+    {
+        return new PostDto
+        {
+            Id = post.Id,
+
+            Title = post.Title,
+
+            Content = post.Content,
+
+            ViewCount = post.ViewCount,
+
+            LikeCount = post.Likes.Count,
+
+            CreatedAt = post.CreatedAt,
+
+            UpdatedAt = post.UpdatedAt,
+
+            UserId = post.UserId,
+
+            AuthorName = post.User.Name,
+
+            Categories = post.Categories
+                .Select(
+                    category =>
+                        new CategoryDto
+                        {
+                            Id = category.Id,
+                            Name = category.Name
+                        }
+                )
+                .ToList()
+        };
     }
 }

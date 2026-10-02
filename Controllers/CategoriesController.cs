@@ -49,7 +49,7 @@ public class CategoriesController : ControllerBase
         );
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(
         CreateCategoryDto dto
@@ -68,7 +68,7 @@ public class CategoriesController : ControllerBase
         );
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(
         int id,
@@ -87,7 +87,7 @@ public class CategoriesController : ControllerBase
         );
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

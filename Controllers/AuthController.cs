@@ -53,23 +53,32 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var userId = User.FindFirstValue(
-        ClaimTypes.NameIdentifier
-    );
+        var userId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier
+            );
 
-        var name = User.FindFirstValue(
-            ClaimTypes.Name
-        );
+        var name =
+            User.FindFirstValue(
+                ClaimTypes.Name
+            );
 
-        var email = User.FindFirstValue(
-            ClaimTypes.Email
-        );
+        var email =
+            User.FindFirstValue(
+                ClaimTypes.Email
+            );
+
+        var role =
+            User.FindFirstValue(
+                ClaimTypes.Role
+            );
 
         var data = new
         {
             userId,
             name,
-            email
+            email,
+            role
         };
 
         return Ok(

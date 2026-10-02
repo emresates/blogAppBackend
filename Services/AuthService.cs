@@ -1,3 +1,4 @@
+using BlogApi.Constants;
 using BlogApi.Data;
 using BlogApi.Dtos.Auth;
 using BlogApi.Exceptions;
@@ -26,10 +27,14 @@ public class AuthService : IAuthService
         RegisterDto dto
     )
     {
-        var existingUser = await _context.Users
-            .FirstOrDefaultAsync(x => x.Email == dto.Email);
+        var email = dto.Email
+            .Trim()
+            .ToLowerInvariant();
 
-        if (existingUser != null)
+        var existingUser = await _context.Users
+            .AnyAsync(x => x.Email == email);
+
+        if (existingUser)
         {
             throw new AppException(
                 "Bu email zaten kullanılıyor.",
@@ -40,65 +45,81 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            Name = dto.Name,
-            Email = dto.Email
+            Name = dto.Name.Trim(),
+            Email = email,
+            Role = Roles.User
         };
 
-        var passwordHasher = new PasswordHasher<User>();
+        var passwordHasher =
+            new PasswordHasher<User>();
 
-        user.PasswordHash = passwordHasher.HashPassword(
-            user,
-            dto.Password
-        );
+        user.PasswordHash =
+            passwordHasher.HashPassword(
+                user,
+                dto.Password
+            );
 
         _context.Users.Add(user);
 
         await _context.SaveChangesAsync();
 
-        var accessToken = _tokenService.CreateToken(user);
+        var accessToken =
+            _tokenService.CreateToken(user);
 
         return new AuthResponseDto
         {
-            AccessToken = accessToken,
+            AccessToken = accessToken
         };
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto> LoginAsync(
+        LoginDto dto
+    )
     {
+        var email = dto.Email
+            .Trim()
+            .ToLowerInvariant();
+
         var user = await _context.Users
-            .FirstOrDefaultAsync(x => x.Email == dto.Email);
+            .FirstOrDefaultAsync(
+                x => x.Email == email
+            );
 
         if (user == null)
         {
             throw new AppException(
                 "Email veya şifre hatalı.",
                 401,
-                "WrongUsernameOrPassword"
+                "invalidCredentials"
             );
         }
 
-        var passwordHasher = new PasswordHasher<User>();
+        var passwordHasher =
+            new PasswordHasher<User>();
 
-        var passwordResult = passwordHasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash,
-            dto.Password
-        );
+        var result =
+            passwordHasher.VerifyHashedPassword(
+                user,
+                user.PasswordHash,
+                dto.Password
+            );
 
-        if (passwordResult == PasswordVerificationResult.Failed)
+        if (result ==
+            PasswordVerificationResult.Failed)
         {
             throw new AppException(
                 "Email veya şifre hatalı.",
                 401,
-                "WrongUsernameOrPassword"
+                "invalidCredentials"
             );
         }
 
-        var accessToken = _tokenService.CreateToken(user);
+        var accessToken =
+            _tokenService.CreateToken(user);
 
         return new AuthResponseDto
         {
-            AccessToken = accessToken,
+            AccessToken = accessToken
         };
     }
 }

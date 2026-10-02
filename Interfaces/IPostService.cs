@@ -22,11 +22,23 @@ public interface IPostService
     Task<PostDto> UpdateAsync(
         int id,
         UpdatePostDto dto,
-        int userId
+        int userId,
+        string role
     );
 
     Task DeleteAsync(
         int id,
+        int userId,
+        string role
+    );
+
+    Task LikeAsync(
+        int postId,
+        int userId
+    );
+
+    Task UnlikeAsync(
+        int postId,
         int userId
     );
 }

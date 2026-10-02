@@ -1,13 +1,18 @@
-namespace BlogApi.Dtos.Posts;
 using BlogApi.Dtos.Categories;
+
+namespace BlogApi.Dtos.Posts;
 
 public class PostDto
 {
     public int Id { get; set; }
 
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } = "";
 
-    public string Content { get; set; } = string.Empty;
+    public string Content { get; set; } = "";
+
+    public int ViewCount { get; set; }
+
+    public int LikeCount { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -15,7 +20,7 @@ public class PostDto
 
     public int UserId { get; set; }
 
-    public string AuthorName { get; set; } = string.Empty;
+    public string AuthorName { get; set; } = "";
 
     public List<CategoryDto> Categories { get; set; } = new();
 }
