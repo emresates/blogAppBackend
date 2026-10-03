@@ -83,5 +83,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<RefreshToken>()
             .HasIndex(x => x.TokenHash)
             .IsUnique();
+
+        modelBuilder.Entity<Comment>()
+            .HasOne(x => x.ParentComment)
+            .WithMany(x => x.Replies)
+            .HasForeignKey(x => x.ParentCommentId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

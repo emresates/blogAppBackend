@@ -26,4 +26,10 @@ public interface ICommentService
         int userId,
         string role
     );
+
+    Task<CommentDto> CreateReplyAsync(
+        int parentCommentId,
+        CreateReplyDto dto,
+        int userId
+    );
 }

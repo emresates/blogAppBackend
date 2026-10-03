@@ -15,4 +15,8 @@ public class CommentDto
     public string UserName { get; set; } = "";
 
     public int PostId { get; set; }
+
+    public int? ParentCommentId { get; set; }
+
+    public List<CommentDto> Replies { get; set; } = new();
 }

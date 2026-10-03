@@ -20,8 +20,8 @@ public class CommentService : ICommentService
     }
 
     public async Task<List<CommentDto>> GetByPostIdAsync(
-        int postId
-    )
+    int postId
+)
     {
         var postExists =
             await _context.Posts
@@ -38,40 +38,78 @@ public class CommentService : ICommentService
             );
         }
 
-        return await _context.Comments
-            .AsNoTracking()
-            .Where(
-                x => x.PostId == postId
+        var comments =
+            await _context.Comments
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Where(
+                    x => x.PostId == postId
+                )
+                .OrderBy(x => x.CreatedAt)
+                .ToListAsync();
+
+        var commentMap =
+            comments.ToDictionary(
+                comment => comment.Id,
+                comment => new CommentDto
+                {
+                    Id = comment.Id,
+
+                    Content = comment.Content,
+
+                    CreatedAt =
+                        comment.CreatedAt,
+
+                    UpdatedAt =
+                        comment.UpdatedAt,
+
+                    UserId =
+                        comment.UserId,
+
+                    UserName =
+                        comment.User.Name,
+
+                    PostId =
+                        comment.PostId,
+
+                    ParentCommentId =
+                        comment.ParentCommentId,
+
+                    Replies =
+                        new List<CommentDto>()
+                }
+            );
+
+        var rootComments =
+            new List<CommentDto>();
+
+        foreach (var comment in comments)
+        {
+            var dto =
+                commentMap[comment.Id];
+
+            if (
+                comment.ParentCommentId.HasValue
+                &&
+                commentMap.TryGetValue(
+                    comment.ParentCommentId.Value,
+                    out var parentDto
+                )
             )
+            {
+                parentDto.Replies.Add(dto);
+            }
+            else
+            {
+                rootComments.Add(dto);
+            }
+        }
+
+        return rootComments
             .OrderByDescending(
                 x => x.CreatedAt
             )
-            .Select(
-                comment =>
-                    new CommentDto
-                    {
-                        Id = comment.Id,
-
-                        Content =
-                            comment.Content,
-
-                        CreatedAt =
-                            comment.CreatedAt,
-
-                        UpdatedAt =
-                            comment.UpdatedAt,
-
-                        UserId =
-                            comment.UserId,
-
-                        UserName =
-                            comment.User.Name,
-
-                        PostId =
-                            comment.PostId
-                    }
-            )
-            .ToListAsync();
+            .ToList();
     }
 
     public async Task<CommentDto> CreateAsync(
@@ -146,7 +184,9 @@ public class CommentService : ICommentService
 
             UserName = user.Name,
 
-            PostId = comment.PostId
+            PostId = comment.PostId,
+
+            ParentCommentId = null
         };
     }
 
@@ -265,5 +305,91 @@ public class CommentService : ICommentService
         _context.Comments.Remove(comment);
 
         await _context.SaveChangesAsync();
+    }
+
+
+    public async Task<CommentDto> CreateReplyAsync(
+        int parentCommentId,
+        CreateReplyDto dto,
+        int userId
+    )
+    {
+        var parentComment =
+            await _context.Comments
+                .FirstOrDefaultAsync(
+                    x => x.Id == parentCommentId
+                );
+
+        if (parentComment == null)
+        {
+            throw new AppException(
+                "Yanıt verilecek yorum bulunamadı.",
+                404,
+                "parentCommentNotFound"
+            );
+        }
+
+        var user =
+            await _context.Users
+                .FirstOrDefaultAsync(
+                    x => x.Id == userId
+                );
+
+        if (user == null)
+        {
+            throw new AppException(
+                "Kullanıcı bulunamadı.",
+                404,
+                "userNotFound"
+            );
+        }
+
+        var content = dto.Content.Trim();
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new AppException(
+                "Yorum boş olamaz.",
+                400,
+                "commentIsRequired"
+            );
+        }
+
+        var reply = new Comment
+        {
+            Content = content,
+
+            UserId = userId,
+
+            PostId = parentComment.PostId,
+
+            ParentCommentId = parentComment.Id
+        };
+
+        _context.Comments.Add(reply);
+
+        await _context.SaveChangesAsync();
+
+        return new CommentDto
+        {
+            Id = reply.Id,
+
+            Content = reply.Content,
+
+            CreatedAt = reply.CreatedAt,
+
+            UpdatedAt = reply.UpdatedAt,
+
+            UserId = reply.UserId,
+
+            UserName = user.Name,
+
+            PostId = reply.PostId,
+
+            ParentCommentId =
+                reply.ParentCommentId,
+
+            Replies = new List<CommentDto>()
+        };
     }
 }

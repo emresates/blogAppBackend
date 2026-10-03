@@ -166,4 +166,33 @@ public class CommentsController : ControllerBase
 
         return role;
     }
+
+    [Authorize]
+    [HttpPost("comments/{commentId:int}/replies")]
+    public async Task<IActionResult> CreateReply(
+    int commentId,
+    CreateReplyDto dto
+)
+    {
+        var userId =
+            GetUserId();
+
+        var result =
+            await _commentService
+                .CreateReplyAsync(
+                    commentId,
+                    dto,
+                    userId
+                );
+
+        return StatusCode(
+            201,
+            ApiResponse<CommentDto>
+                .Success(
+                    result,
+                    201,
+                    "Yanıt oluşturuldu."
+                )
+        );
+    }
 }
