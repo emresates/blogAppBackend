@@ -23,4 +23,7 @@ public class User
     public List<Comment> Comments { get; set; } = new();
 
     public bool IsActive { get; set; } = true;
+
+    public List<RefreshToken> RefreshTokens { get; set; }
+    = new();
 }

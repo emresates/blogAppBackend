@@ -21,6 +21,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Comment> Comments { get; set; }
 
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -71,5 +73,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Post>()
             .Property(x => x.Content)
             .HasColumnType("jsonb");
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.RefreshTokens)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasIndex(x => x.TokenHash)
+            .IsUnique();
     }
 }

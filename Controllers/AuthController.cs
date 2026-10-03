@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using BlogApi.Models.Responses;
+using BlogApi.Exceptions;
 
 namespace BlogApi.Controllers;
 
@@ -23,12 +24,23 @@ public class AuthController : ControllerBase
         RegisterDto dto
     )
     {
-        var result = await _authService.RegisterAsync(dto);
+        var result =
+    await _authService.RegisterAsync(dto);
+
+        SetRefreshTokenCookie(
+            result.RefreshToken
+        );
+
+        var response = new AuthResponseDto
+        {
+            AccessToken =
+                result.AccessToken
+        };
 
         return StatusCode(
             201,
             ApiResponse<AuthResponseDto>.Success(
-                result,
+                response,
                 201,
                 "Kullanıcı başarıyla oluşturuldu."
             )
@@ -36,13 +48,27 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    public async Task<IActionResult> Login(
+    LoginDto dto
+)
     {
-        var result = await _authService.LoginAsync(dto);
+        var result =
+            await _authService.LoginAsync(dto);
+
+        SetRefreshTokenCookie(
+            result.RefreshToken
+        );
+
+        var response =
+            new AuthResponseDto
+            {
+                AccessToken =
+                    result.AccessToken
+            };
 
         return Ok(
             ApiResponse<AuthResponseDto>.Success(
-                result,
+                response,
                 200,
                 "Giriş başarılı."
             )
@@ -86,6 +112,112 @@ public class AuthController : ControllerBase
                 data,
                 200,
                 "Kullanıcı bilgileri getirildi."
+            )
+        );
+    }
+
+    private void SetRefreshTokenCookie(
+    string refreshToken
+)
+    {
+        Response.Cookies.Append(
+            "refreshToken",
+            refreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+
+                Secure = true,
+
+                SameSite = SameSiteMode.None,
+
+                Expires =
+                    DateTimeOffset.UtcNow.AddDays(7)
+            }
+        );
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        if (
+            !Request.Cookies.TryGetValue(
+                "refreshToken",
+                out var refreshToken
+            )
+            ||
+            string.IsNullOrWhiteSpace(
+                refreshToken
+            )
+        )
+        {
+            throw new AppException(
+                "Refresh token bulunamadı.",
+                401,
+                "refreshTokenMissing"
+            );
+        }
+
+        var result =
+            await _authService.RefreshAsync(
+                refreshToken
+            );
+
+        SetRefreshTokenCookie(
+            result.RefreshToken
+        );
+
+        var response =
+            new AuthResponseDto
+            {
+                AccessToken =
+                    result.AccessToken
+            };
+
+        return Ok(
+            ApiResponse<AuthResponseDto>.Success(
+                response,
+                200,
+                "Token yenilendi."
+            )
+        );
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        if (
+            Request.Cookies.TryGetValue(
+                "refreshToken",
+                out var refreshToken
+            )
+            &&
+            !string.IsNullOrWhiteSpace(
+                refreshToken
+            )
+        )
+        {
+            await _authService.LogoutAsync(
+                refreshToken
+            );
+        }
+
+        Response.Cookies.Delete(
+            "refreshToken",
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite =
+                    SameSiteMode.None
+            }
+        );
+
+        return Ok(
+            ApiResponse<object>.Success(
+                new { },
+                200,
+                "Çıkış yapıldı."
             )
         );
     }

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using BlogApi.Models;
 using Microsoft.IdentityModel.Tokens;
@@ -15,36 +16,65 @@ public class TokenService
         _configuration = configuration;
     }
 
-    public string CreateToken(User user)
+    public string CreateRefreshToken()
     {
-        var jwtKey = _configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException("Jwt:Key bulunamadı.");
+        var randomBytes =
+            RandomNumberGenerator.GetBytes(64);
 
-        var issuer = _configuration["Jwt:Issuer"];
-        var audience = _configuration["Jwt:Audience"];
+        return Convert.ToBase64String(
+            randomBytes
+        );
+    }
+
+    public string HashRefreshToken(
+    string token
+    )
+    {
+        var bytes =
+            Encoding.UTF8.GetBytes(token);
+
+        var hash =
+            SHA256.HashData(bytes);
+
+        return Convert.ToHexString(hash);
+    }
+
+    public string CreateAccessToken(User user)
+    {
+        var jwtKey =
+            _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException(
+                "Jwt:Key bulunamadı."
+            );
+
+        var issuer =
+            _configuration["Jwt:Issuer"];
+
+        var audience =
+            _configuration["Jwt:Audience"];
 
         var claims = new List<Claim>
-        {
-            new(
-                ClaimTypes.NameIdentifier,
-                user.Id.ToString()
-            ),
+    {
+        new(
+            ClaimTypes.NameIdentifier,
+            user.Id.ToString()
+        ),
 
-            new(
-                ClaimTypes.Name,
-                user.Name
-            ),
+        new(
+            ClaimTypes.Name,
+            user.Name
+        ),
 
-            new(
-                ClaimTypes.Email,
-                user.Email
-            ),
+        new(
+            ClaimTypes.Email,
+            user.Email
+        ),
 
-            new(
-                ClaimTypes.Role,
-                user.Role
-            )
-        };
+        new(
+            ClaimTypes.Role,
+            user.Role
+        )
+    };
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey)
@@ -59,7 +89,10 @@ public class TokenService
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(30),
+
+            // ACCESS TOKEN KISA ÖMÜRLÜ
+            expires: DateTime.UtcNow.AddMinutes(15),
+
             signingCredentials: credentials
         );
 
