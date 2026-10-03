@@ -21,4 +21,6 @@ public class User
     public List<PostLike> PostLikes { get; set; } = new();
 
     public List<Comment> Comments { get; set; } = new();
+
+    public bool IsActive { get; set; } = true;
 }

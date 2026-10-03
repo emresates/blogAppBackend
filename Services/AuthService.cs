@@ -47,7 +47,8 @@ public class AuthService : IAuthService
         {
             Name = dto.Name.Trim(),
             Email = email,
-            Role = Roles.User
+            Role = Roles.User,
+            IsActive = true
         };
 
         var passwordHasher =
@@ -91,6 +92,15 @@ public class AuthService : IAuthService
                 "Email veya şifre hatalı.",
                 401,
                 "invalidCredentials"
+            );
+        }
+
+        if (!user.IsActive)
+        {
+            throw new AppException(
+                "Hesabınız devre dışı bırakılmış.",
+                403,
+                "userDisabled"
             );
         }
 
